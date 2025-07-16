@@ -1,0 +1,46 @@
+version: '3'
+
+networks:
+  kong-net:
+    driver: bridge
+    external:
+      name: nginx-proxy_network
+
+services:
+  #####################################################################
+  # MongoDB for Konga
+  #####################################################################
+  konga-database:
+    image: mongo:5
+    restart: unless-stopped
+    networks:
+      - kong-net
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - konga-mongo:/data/db
+    ports:
+      - "27017:27017"
+
+  #####################################################################
+  # Konga Web UI
+  #####################################################################
+  konga:
+    image: pantsel/konga:latest
+    restart: unless-stopped
+    networks:
+      - kong-net
+    ports:
+      - "1337:1337"  # Konga Web UI Port
+    environment:
+      - NODE_ENV=production
+      - PORT=1337
+      - DATABASE_TYPE=mongo
+      - DATABASE_URI=mongodb://konga-database:27017/konga
+    depends_on:
+      - konga-database
+
+volumes:
+  konga-mongo: {}
